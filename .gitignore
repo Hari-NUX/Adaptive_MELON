@@ -1,0 +1,46 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.token
+*_token.json
+credentials.json
+token.json
+
+# Downloaded datasets and prepared examples
+datasets/gmail/raw/*
+!datasets/gmail/raw/.gitkeep
+datasets/gmail/prepared/*
+!datasets/gmail/prepared/.gitkeep
+datasets/internet/raw/*
+!datasets/internet/raw/.gitkeep
+datasets/internet/prepared/*
+!datasets/internet/prepared/.gitkeep
+*.parquet
+*.jsonl
+
+# Model artifacts, checkpoints, and runs
+models/
+checkpoints/
+runs/
+outputs/
+*.safetensors
+*.gguf
+*.pt
+*.pth
+
+# Editor/system noise
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# Keep run directories in the clone but not model/results artifacts
+runs/*
+!runs/**/
+!runs/**/.gitkeep
+datasets/
+
