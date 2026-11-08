@@ -1,4 +1,4 @@
-# Fine-tuned MELON study
+# Fine-tuned MELON
 
 This project prepares email and webpage prompt-injection examples, generates and validates MELON teacher traces, and later compares base and LoRA/QLoRA-tuned Qwen models with and without the MELON runtime defense.
 
