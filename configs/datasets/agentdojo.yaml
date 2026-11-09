@@ -1,0 +1,12 @@
+source: ethz-spylab/agentdojo
+role: agent_runtime_evaluation
+not_a_flat_training_corpus: true
+required_case_fields:
+  - attacked
+  - user_task_success
+  - attack_success_for_attacked_cases
+optional_case_fields:
+  - blocked
+  - defense
+  - agent
+  - attack

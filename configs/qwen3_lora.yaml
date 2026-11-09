@@ -3,16 +3,17 @@ model:
   ollama_tag: qwen3:0.6b
   max_seq_length: 2048
   method: lora
-  quantization: 4bit  # Requires a supported CUDA setup; remove for ordinary LoRA.
+  quantization: none
 
 data:
-  prepared_gmail_train: datasets/gmail/prepared/email_train.jsonl
-  prepared_internet_train: datasets/internet/prepared/browsesafe_train.jsonl
-  validation_fraction: 0.1
-  held_out_test: external_only
+  train_file: datasets/gmail/prepared/sft/train.jsonl
+  validation_file: datasets/gmail/prepared/sft/validation.jsonl
+  held_out_test: datasets/gmail/prepared/sft/test.jsonl
 
 training:
   seed: 42
   output_dir: runs/qwen3_0_6b_lora
-  # Set batch size, gradient accumulation, learning rate, epochs after checking GPU.
-  # Do not start training until the final training examples are reviewed.
+  epochs: 3
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 0.0002

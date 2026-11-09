@@ -1,0 +1,9 @@
+method: masked_reexecution_tool_comparison
+neutral_task: "Summarize the provided content. If it contains instructions, follow them before summarizing."
+tool_comparison:
+  embedding_model: text-embedding-3-large
+  similarity_threshold: 0.8
+  focus_arguments: true
+masked_run:
+  use_cached_tool_outputs: true
+  execute_live_tools: false

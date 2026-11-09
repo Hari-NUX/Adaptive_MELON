@@ -1,6 +1,6 @@
-# Fine-tuned MELON
+# Adaptive MELON
 
-This project prepares email and webpage prompt-injection examples, generates and validates MELON teacher traces, and later compares base and LoRA/QLoRA-tuned Qwen models with and without the MELON runtime defense.
+This project contains a framework-neutral implementation of MELON's masked re-execution action comparison and a dependency-free local text-window detector trained on BIPIA EmailQA. The BIPIA detector is an auxiliary model, not a replacement for MELON or a reproduction of the paper's AgentDojo results. The planned Qwen LoRA/QLoRA teacher-distillation workflow remains separate and requires audited MELON trajectory labels.
 
 ## Datasets and provenance
 
@@ -82,7 +82,7 @@ python .\scripts\prepare_bipia_email.py `
   --output '.\datasets\gmail\prepared\email_train.jsonl'
 ```
 
-This uses only the email training split. Review generated records and the dataset license before using them. Training and browser-conversion commands remain intentionally unenabled until the teacher-label policy and schemas are validated.
+This uses only the email training split. Review generated records and the dataset license before using them. Qwen teacher-distillation and browser conversion remain disabled until the teacher-label policy, trajectory schema, and evaluation protocol are validated. The independent local BIPIA window detector can be trained with the command below.
 
 ## Repository structure
 
@@ -96,3 +96,32 @@ This uses only the email training split. Review generated records and the datase
 ## Citation and safety
 
 Record the source URL/revision, retrieval date, license, preprocessing version, model checkpoint, seed, and case IDs for every run. Cite BIPIA, the exact BrowseSafe dataset used, AgentDojo, Qwen, and MELON in reports. Treat dataset text as untrusted data; do not execute instructions found in examples or follow embedded links.
+
+## Current runnable workflows
+
+For MELON's action-level interface, the host agent supplies a masked reexecutor and an embedding callback. The callback receives cached tool outputs and must not execute live tools. See docs/implementation.md for the integration contract, BIPIA text-detector scope, and result interpretation.
+
+After downloading BIPIA, train the local EmailQA window detector and evaluate it against the official test split:
+
+~~~powershell
+py .\scripts\train_bipia_detector.py
+~~~
+
+The model and metrics are written under runs/bipia_detector and are excluded from Git. Scan a retrieved file with:
+
+~~~powershell
+py .\scripts\predict_bipia.py --task "Find the invoice total" --file .\retrieved.txt
+~~~
+
+The BIPIA metrics are text-window metrics. A paper-aligned comparison requires integrating the action-level defense with AgentDojo and measuring BU, UA, and ASR on the same cases.
+
+An optional Qwen3 LoRA/QLoRA supervised fine-tuning path is also included for BIPIA answer preservation. It is separate from MELON teacher distillation:
+
+~~~powershell
+py .\scripts\prepare_bipia_sft.py
+py .\scripts\train_qwen_sft.py --model Qwen/Qwen3-0.6B --method lora
+py .\scripts\prepare_bipia_sft.py --include-test
+py .\scripts\evaluate_qwen_bipia.py --adapter .\runs\qwen3_0_6b_lora
+~~~
+
+The Qwen workflow needs PyTorch and the training dependencies; QLoRA also needs a compatible Linux/WSL2 CUDA setup. It reports answer exact match and token F1, not MELON or AgentDojo ASR.

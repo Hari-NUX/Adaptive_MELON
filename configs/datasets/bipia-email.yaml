@@ -1,0 +1,9 @@
+source: Microsoft/BIPIA
+benchmark_root: datasets/gmail/raw
+train_contexts: datasets/gmail/raw/email_train.jsonl
+test_contexts: datasets/gmail/raw/email_test.jsonl
+train_attacks: datasets/gmail/raw/text_attack_train.json
+test_attacks: datasets/gmail/raw/text_attack_test.json
+prepared_sft_dir: datasets/gmail/prepared/sft
+test_data_may_be_prepared_for_evaluation: true
+test_data_must_not_be_used_for_training: true

@@ -1,0 +1,24 @@
+agentdojo:
+  case_results: runs/agentdojo/cases.jsonl
+  group_by:
+    - defense
+    - agent
+    - attack
+  report:
+    - BU
+    - UA
+    - ASR
+    - benign_FPR
+
+bipia:
+  split: official_test
+  text_metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+  answer_metrics:
+    - exact_match
+    - token_f1
+  do_not_equate_with_agentdojo_metrics: true
