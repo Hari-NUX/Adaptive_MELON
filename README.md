@@ -99,6 +99,13 @@ Record the source URL/revision, retrieval date, license, preprocessing version, 
 
 ## Current runnable workflows
 
+### Ask a local model about Gmail
+
+An optional Gmail CLI uses desktop OAuth to search and read your messages, then
+asks local Ollama to answer your task. The Gmail API scope is read-only: the
+agent cannot create drafts, send, delete, or modify mail. See
+[docs/gmail_agent.md](docs/gmail_agent.md) for Google Cloud setup and commands.
+
 ### Local IPI email-agent demonstration
 
 The BIPIA detector is a classifier and cannot generate email. To demonstrate an
