@@ -6,14 +6,16 @@ This project prepares email and webpage prompt-injection examples, generates and
 
 ### BIPIA email data (four files)
 
-| File | Official download | Purpose |
-| --- | --- | --- |
-| `email/train.jsonl` | [train.jsonl](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/email/train.jsonl) | Email contexts for training preparation |
-| `text_attack_train.json` | [text_attack_train.json](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/text_attack_train.json) | Training attack templates |
-| `email/test.jsonl` | [test.jsonl](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/email/test.jsonl) | Held-out email contexts |
-| `text_attack_test.json` | [text_attack_test.json](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/text_attack_test.json) | Held-out attack templates |
+| File                     | Official download                                                                                                 | Purpose                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `email/train.jsonl`      | [train.jsonl](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/email/train.jsonl)                 | Email contexts for training preparation |
+| `text_attack_train.json` | [text_attack_train.json](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/text_attack_train.json) | Training attack templates               |
+| `email/test.jsonl`       | [test.jsonl](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/email/test.jsonl)                   | Held-out email contexts                 |
+| `text_attack_test.json`  | [text_attack_test.json](https://raw.githubusercontent.com/microsoft/BIPIA/main/benchmark/text_attack_test.json)   | Held-out attack templates               |
 
 BIPIA supplies contexts and attack templates separately. Constructed adversarial examples are generated from these ingredients; they are not themselves MELON-labeled trajectories.
+
+**What BIPIA is:** BIPIA (Benchmarking and Improving Prompt Injection Attack resistance) is the benchmark and research project. Its GitHub repository contains data, optional builder/evaluation code, and experiment support. The four downloaded JSON/JSONL files are the actual source data for this email subset; they are not a Python library. This project does not need to install BIPIA as a package to audit those files. Its builder is useful as the reference for constructing official benchmark cases, while MELON tool-action traces require a separate simulated email-agent environment.
 
 ### BrowseSafe-Bench internet data (two files)
 
@@ -22,6 +24,32 @@ The existing downloader uses BrowseSafe-Bench, which is **different** from Brows
 The 964 MB `members-train-0000.parquet` mentioned in the project notes is claimed to be a BrowseSafe++ shard. It is **not** one of the BrowseSafe-Bench files above. Keep it under `data/raw/browsesafepp/` and separate from `datasets/internet/raw/` until its upstream repository, exact revision, license, schema, and access terms have been verified. Do not have the clone downloader silently substitute one dataset for the other.
 
 ## Clone and download
+
+### Prepare the Gmail phase (Windows)
+
+With Ollama running and the four BIPIA email files already in `datasets/gmail/raw/`, run this from the repository root:
+
+```powershell
+.\scripts\prepare_gmail.ps1
+```
+
+This audits the source files, reuses or builds training-only simulated Gmail scenarios, resumes paired local Ollama traces, and partitions them by source email into train and validation files. It does not install training dependencies, download Hugging Face weights, or start fine-tuning. If trace generation is interrupted, rerun the same command to resume from saved rows. The default teacher is `qwen3:1.7b`; to select another already-installed Ollama tag, use `-Model <tag>`.
+
+The resulting partitions are provisional machine labels. Before training, review them interactively with a resumable journal:
+
+```powershell
+python .\scripts\review_teacher_traces.py --overwrite
+```
+
+The reviewer displays the task, retrieved context, paired actions, comparison, and simulated outcome. `A` accepts the suggested label, `L` or `B` overrides it with a required reason, `S` excludes the row, and `Q` saves progress to `datasets/gmail/prepared/gmail_teacher_review_progress.jsonl`. Rerun the command to continue. The provisional partitions are replaced only after the full review reaches completion.
+
+For a non-interactive run, apply only the documented machine action-match rule with:
+
+```powershell
+python .\scripts\auto_adjudicate_teacher_traces.py --overwrite
+```
+
+This deterministic option uses each trace's recorded suggestion; it does not press random keys or represent the labels as human-reviewed. It replaces the provisional partitions and leaves any interactive review journal untouched.
 
 Clone the repository, open PowerShell in the cloned project root, and run this one command:
 
@@ -63,16 +91,31 @@ The original MELON method is a runtime defense. A model trained on MELON-generat
 
 ## Models and environment
 
-Inference tags used in the pilot: `qwen3:0.6b` and `qwen3:1.7b`. For Hugging Face training, use [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B) or [Qwen3-1.7B](https://huggingface.co/Qwen/Qwen3-1.7B). Ollama is for inference; LoRA training produces adapter weights that need a compatible inference/export path.
+Inference tags used in the pilot: `qwen3:0.6b` and `qwen3:1.7b`. The trainer uses the corresponding Hugging Face checkpoints. Ollama remains useful for inference; its quantized model is separate from the Transformers checkpoint and the saved LoRA adapter.
 
-Use Git, PowerShell, and Python 3.11 in a separate environment. For practical QLoRA training, Linux/WSL2 with compatible NVIDIA CUDA hardware is recommended. Install a PyTorch build matching the local CUDA setup using the [official selector](https://pytorch.org/get-started/locally/).
+The initial training path is CPU LoRA for Windows systems such as the project laptop. The launcher selects CPU PyTorch and Python 3.11. Expect CPU training to be slow; the wall time depends on model size, sequence length, dataset size, and system load. Running fewer background applications can leave more RAM for training, but cannot make CPU training equivalent in speed to a CUDA GPU. The project makes no fixed-hours or quality guarantee.
+
+### Gmail adapter evaluation
+
+After training Qwen3-0.6B, run a small held-out preview with:
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+.\.venv\Scripts\python.exe .\scripts\evaluate_gmail_lora.py --limit-contexts 5
 ```
+
+This uses five untouched BIPIA test email contexts expanded into clean cases and two newly written synthetic forwarding-injection cases per context. It compares base one-pass, base plus task-neutral replay, and the LoRA student in a local, non-sending simulation. The base model uses its Qwen chat template; the student keeps its SFT prompt. Review `runs/gmail_qwen3_0_6b_lora/gmail_eval_preview_chatprompt.json`. For the full 50-context evaluation, pass `--limit-contexts 0`; do that after checking the preview and its parse rate. Metrics are a pilot of this synthetic action task, not an official BIPIA score or broad security guarantee.
+
+## One-command launcher
+
+From PowerShell in the cloned repository, run:
+
+```powershell
+.\scripts\finetune.ps1
+```
+
+The launcher can offer to install Python 3.11, fetch the four BIPIA email files while explicitly skipping BrowseSafe-Bench, audit the files, create a 250-row train-only synthetic action-scenario set, and generate paired traces with local Ollama `qwen3:1.7b`. It source-group partitions machine labels into train and validation; `scripts/review_teacher_traces.py` can inspect and override them. The launcher prompts before downloading the Ollama teacher model if missing and before downloading the selected Hugging Face student checkpoint. It does not convert BIPIA answer keys into safety labels. A four-row paired pilot is recorded in `docs/gmail_teacher_pilot.md`.
+
+For the current local pilot, paired provisional traces can be generated from the synthetic scenarios with an installed Ollama model using `python .\scripts\generate_teacher_traces.py --model qwen3:1.7b`. Inspect them with `python .\scripts\review_teacher_traces.py` before training. The masked replay is read-only; original proposed writes affect only the in-memory simulator.
 
 ## Prepare candidate email examples
 
@@ -82,7 +125,7 @@ python .\scripts\prepare_bipia_email.py `
   --output '.\datasets\gmail\prepared\email_train.jsonl'
 ```
 
-This uses only the email training split. Review generated records and the dataset license before using them. Training and browser-conversion commands remain intentionally unenabled until the teacher-label policy and schemas are validated.
+This uses only the email training split and creates ordinary EmailQA answer candidates. It does not create MELON teacher labels and is not accepted by the safety fine-tuning loader.
 
 ## Repository structure
 
@@ -96,3 +139,6 @@ This uses only the email training split. Review generated records and the datase
 ## Citation and safety
 
 Record the source URL/revision, retrieval date, license, preprocessing version, model checkpoint, seed, and case IDs for every run. Cite BIPIA, the exact BrowseSafe dataset used, AgentDojo, Qwen, and MELON in reports. Treat dataset text as untrusted data; do not execute instructions found in examples or follow embedded links.
+
+fron comparision b/w bare & melon with adapter after gmail fine tuning
+.\.venv\Scripts\python.exe .\scripts\evaluate_gmail_lora.py --limit-contexts 5

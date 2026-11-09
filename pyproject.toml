@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melon-guard-study"
+version = "0.1.0"
+description = "CPU-first MELON-inspired LoRA study for simulated email agents"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { file = "LICENSE" }
+dependencies = [
+    "torch>=2.2",
+    "transformers>=4.51,<6",
+    "peft>=0.14",
+    "accelerate>=1.2",
+    "datasets>=3.0",
+]
+
+[project.scripts]
+melon-finetune = "melon_guard.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

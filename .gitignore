@@ -31,6 +31,9 @@ outputs/
 *.gguf
 *.pt
 *.pth
+*.egg-info/
+build/
+dist/
 
 # Editor/system noise
 .vscode/
@@ -42,5 +45,4 @@ Desktop.ini
 runs/*
 !runs/**/
 !runs/**/.gitkeep
-datasets/
 

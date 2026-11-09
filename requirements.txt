@@ -1,7 +1,5 @@
-datasets>=3.0
-pyarrow>=18.0
-transformers>=4.51
-accelerate>=1.2
+torch>=2.2
+transformers>=4.51,<6
 peft>=0.14
-trl>=0.15
-PyYAML>=6.0
+accelerate>=1.2
+datasets>=3.0
