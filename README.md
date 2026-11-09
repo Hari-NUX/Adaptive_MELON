@@ -99,6 +99,22 @@ Record the source URL/revision, retrieval date, license, preprocessing version, 
 
 ## Current runnable workflows
 
+### Local IPI email-agent demonstration
+
+The BIPIA detector is a classifier and cannot generate email. To demonstrate an
+indirect prompt injection affecting an email agent, install Ollama and download
+`qwen3:0.6b`, then run the local vulnerable-baseline/MELON comparison:
+
+~~~powershell
+ollama pull qwen3:0.6b
+py -3.15 .\examples\email_agent\ipi_demo.py
+~~~
+
+The demo's vulnerable baseline records only to a local mock outbox; it has no
+SMTP integration and cannot deliver email. The injected address is restricted
+to the reserved `.invalid` domain. See
+[examples/email_agent/README.md](examples/email_agent/README.md) for details.
+
 For MELON's action-level interface, the host agent supplies a masked reexecutor and an embedding callback. The callback receives cached tool outputs and must not execute live tools. See docs/implementation.md for the integration contract, BIPIA text-detector scope, and result interpretation.
 
 After downloading BIPIA, train the local EmailQA window detector and evaluate it against the official test split:
