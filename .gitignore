@@ -9,6 +9,9 @@ __pycache__/
 *_token.json
 credentials.json
 token.json
+/secrets/*
+!/secrets/.gitkeep
+!/secrets/README.md
 
 # Downloaded datasets and prepared examples
 datasets/gmail/raw/*

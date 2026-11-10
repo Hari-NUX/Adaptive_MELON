@@ -140,5 +140,25 @@ This uses only the email training split and creates ordinary EmailQA answer cand
 
 Record the source URL/revision, retrieval date, license, preprocessing version, model checkpoint, seed, and case IDs for every run. Cite BIPIA, the exact BrowseSafe dataset used, AgentDojo, Qwen, and MELON in reports. Treat dataset text as untrusted data; do not execute instructions found in examples or follow embedded links.
 
-fron comparision b/w bare & melon with adapter after gmail fine tuning
+from comparision b/w bare & melon with adapter after gmail fine tuning
 .\.venv\Scripts\python.exe .\scripts\evaluate_gmail_lora.py --limit-contexts 5
+
+converter or importer for adapter addon or for gguf converter
+.\.venv\Scripts\python.exe .\scripts\convert_gmail_merged_to_ollama.py
+
+for 1.7b
+.\.venv\Scripts\python.exe .\scripts\report_gmail_eval.py --input .\runs\gmail_qwen3_1_7b_lora\gmail_eval_preview.json
+
+and now for the Adapter transfer
+
+.\.venv\Scripts\python.exe .\scripts\package_gmail_adapter_for_ollama.py --model 1.7b --merge-only
+
+and then for the ollama push
+.\.venv\Scripts\python.exe .\scripts\convert_gmail_merged_to_ollama.py --model 1.7b
+
+both 0.6 and 1.7b quantisized
+.\.venv\Scripts\python.exe .\scripts\quantize_gmail_ollama.py --model 0.6b
+.\.venv\Scripts\python.exe .\scripts\quantize_gmail_ollama.py --model 1.7b
+
+0.6b internet tuning
+.\.venv\Scripts\python.exe .\scripts\finetune_browsesafepp.py --epochs 1

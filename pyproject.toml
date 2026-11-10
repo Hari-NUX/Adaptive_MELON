@@ -17,6 +17,13 @@ dependencies = [
     "datasets>=3.0",
 ]
 
+[project.optional-dependencies]
+gmail-ui = [
+    "google-api-python-client>=2.100",
+    "google-auth-httplib2>=0.2",
+    "google-auth-oauthlib>=1.2",
+]
+
 [project.scripts]
 melon-finetune = "melon_guard.cli:main"
 
