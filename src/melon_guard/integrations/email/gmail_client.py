@@ -80,15 +80,27 @@ class GmailClient:
         """Return metadata and plain-text bodies for the most recent matches."""
         if not query.strip():
             raise ValueError("Gmail search query must not be empty.")
-        if not 1 <= limit <= 20:
-            raise ValueError("limit must be between 1 and 20.")
-        response = self.service.users().messages().list(
-            userId="me", q=query, maxResults=limit
-        ).execute()
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100.")
+        ids: list[str] = []
+        page_token = None
+        while len(ids) < limit:
+            parameters = {
+                "userId": "me",
+                "q": query,
+                "maxResults": min(100, limit - len(ids)),
+            }
+            if page_token:
+                parameters["pageToken"] = page_token
+            response = self.service.users().messages().list(**parameters).execute()
+            ids.extend(item["id"] for item in response.get("messages", []))
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
         messages = []
-        for item in response.get("messages", []):
+        for message_id in ids[:limit]:
             message = self.service.users().messages().get(
-                userId="me", id=item["id"], format="full"
+                userId="me", id=message_id, format="full"
             ).execute()
             payload = message.get("payload", {})
             headers = {
