@@ -103,7 +103,11 @@ Record the source URL/revision, retrieval date, license, preprocessing version, 
 
 An optional Gmail CLI uses desktop OAuth to search and read your messages, then
 asks local Ollama to answer your task. The Gmail API scope is read-only: the
-agent cannot create drafts, send, delete, or modify mail. See
+regular assistant cannot create drafts, send, delete, or modify mail. A separate
+comparison command reports the vulnerable and MELON-protected results together;
+with `--create-draft`, it can stage only the unprotected result as an unsent
+draft after you confirm its full preview. Sending remains a manual action in
+Gmail. See
 [docs/gmail_agent.md](docs/gmail_agent.md) for Google Cloud setup and commands.
 
 ### Local IPI email-agent demonstration

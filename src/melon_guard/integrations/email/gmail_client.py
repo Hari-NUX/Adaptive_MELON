@@ -3,19 +3,22 @@ from __future__ import annotations
 
 import base64
 import re
+from email.message import EmailMessage
+from email.utils import parseaddr
 from pathlib import Path
 from typing import Any
 
 
 class GmailClient:
-    """Search and read Gmail messages using a local desktop OAuth token.
+    """Search/read Gmail; optionally create unsent drafts after user approval.
 
-    This client deliberately exposes no compose, modify, delete, or send method.
+    This client deliberately exposes no send, delete, archive, or modify method.
     """
 
-    SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+    READ_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+    DRAFT_SCOPES = READ_SCOPES + ["https://www.googleapis.com/auth/gmail.compose"]
 
-    def __init__(self, credentials_file: Path, token_file: Path):
+    def __init__(self, credentials_file: Path, token_file: Path, *, allow_drafts: bool = False):
         try:
             from google.auth.transport.requests import Request
             from google.oauth2.credentials import Credentials
@@ -28,6 +31,7 @@ class GmailClient:
 
         credentials_file = Path(credentials_file).expanduser()
         token_file = Path(token_file).expanduser()
+        scopes = self.DRAFT_SCOPES if allow_drafts else self.READ_SCOPES
         if not credentials_file.is_file():
             raise FileNotFoundError(
                 f"OAuth client file not found: {credentials_file}. See docs/gmail_agent.md."
@@ -36,18 +40,41 @@ class GmailClient:
         token_file.parent.mkdir(parents=True, exist_ok=True)
         creds = None
         if token_file.is_file():
-            creds = Credentials.from_authorized_user_file(str(token_file), self.SCOPES)
+            creds = Credentials.from_authorized_user_file(str(token_file), scopes)
+            if not creds.has_scopes(scopes):
+                creds = None
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    str(credentials_file), self.SCOPES
+                    str(credentials_file), scopes
                 )
                 creds = flow.run_local_server(port=0)
             token_file.write_text(creds.to_json(), encoding="utf-8")
 
         self.service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        self.allow_drafts = allow_drafts
+
+    def create_draft(self, to: str, subject: str, body: str) -> str:
+        """Create an unsent Gmail draft. There is intentionally no send method."""
+        if not self.allow_drafts:
+            raise PermissionError("Draft creation requires explicit --create-draft mode.")
+        to = to.strip()
+        address = parseaddr(to)[1]
+        if not re.fullmatch(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+", address):
+            raise ValueError("One valid recipient email address is required.")
+        if not subject.strip() or "\r" in subject or "\n" in subject or not body.strip():
+            raise ValueError("Draft subject and body must not be empty.")
+        message = EmailMessage()
+        message["To"] = to
+        message["Subject"] = subject.strip()
+        message.set_content(body)
+        raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii").rstrip("=")
+        created = self.service.users().drafts().create(
+            userId="me", body={"message": {"raw": raw}}
+        ).execute()
+        return str(created["id"])
 
     def search_messages(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
         """Return metadata and plain-text bodies for the most recent matches."""

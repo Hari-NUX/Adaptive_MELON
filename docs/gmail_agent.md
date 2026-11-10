@@ -1,16 +1,49 @@
 # Local Gmail assistant
 
-The CLI connects to Gmail with Google's desktop OAuth flow, searches and reads
-the messages matched by a user-supplied Gmail query, then asks local Ollama to
-answer the user's task. The Gmail API is read-only. Email content is treated as
-untrusted data; the model never receives Gmail tool calls, and the client has no
-send, draft, delete, archive, or modify methods. A requested reply is generated
-as text in the terminal for the user to review and copy.
+The regular CLI connects to Gmail with Google's desktop OAuth flow, searches
+and reads messages matched by a user-supplied Gmail query, then asks local
+Ollama to answer the user's task. Its Gmail API access is read-only. Email
+content is treated as untrusted data; the model never receives Gmail tool calls,
+and the regular CLI cannot send, draft, delete, archive, or modify mail. A
+requested reply is generated as text in the terminal for the user to review.
 
 The BIPIA window detector is an optional warning signal. It does not change
 Gmail state or decide what to do with messages. For an IPI send-attempt demo,
 use `examples/email_agent/ipi_demo.py`, which routes its vulnerable send only
 to a local mock outbox.
+
+## Compare Gmail behavior with and without MELON
+
+To show both paths in one report using selected Gmail messages:
+
+```powershell
+py -3.15 .\scripts\gmail_ipi_compare.py `
+  --task "Draft a reply to the selected email, but do not send it" `
+  --query "in:inbox newer_than:30d"
+```
+
+The no-MELON plan follows instructions in retrieved email to illustrate the
+vulnerable path. The MELON condition masks the task, replays over cached message
+text without executing tools, and compares the proposed email action. Both
+plans, the MELON result, and the BIPIA text-detector signal appear in one JSON
+report. The local token-vector embedder is a demonstration stand-in, not the
+paper's embedding model or a benchmark result.
+
+To optionally stage the no-MELON result as an unsent Gmail draft, add
+`--create-draft`. The script displays the full recipient, subject, and body and
+requires you to type `CREATE DRAFT` before creating it. It has no Gmail send
+call. Open the draft in Gmail, review it, and click Send yourself only if you
+approve. Google's `gmail.compose` OAuth scope also permits API sending, even
+though this program never uses that operation. The regular CLI does not request
+this scope; draft mode requires renewed consent if you previously authorized
+read-only access.
+
+```powershell
+py -3.15 .\scripts\gmail_ipi_compare.py `
+  --task "Draft a reply to the selected email, but do not send it" `
+  --query "in:inbox newer_than:30d" `
+  --create-draft
+```
 
 ## One-time Google setup
 
@@ -26,10 +59,13 @@ to a local mock outbox.
    New-Item -ItemType Directory -Force "$HOME\.adaptive_melon"
    ```
 
-The credential and refresh token stay outside the repository. The script asks
-Google for the `gmail.readonly` OAuth scope only. Google treats this as a
+The credential and refresh token stay outside the repository. The regular CLI
+asks Google for the `gmail.readonly` OAuth scope only. Google treats this as a
 restricted scope, so keep this as a personal local test app and do not distribute
-it without following Google's verification and data-use requirements.
+it without following Google's verification and data-use requirements. Optional
+comparison draft mode also requests `gmail.compose`, which permits managing
+drafts and sending; the app code uses it only to create a draft after the
+confirmation described above.
 
 ## Install and run
 
