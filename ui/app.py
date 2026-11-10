@@ -25,10 +25,7 @@ from melon_guard.teacher.action_comparator import ActionComparator  # noqa: E402
 from melon_guard.teacher.melon_runner import MELONRunner  # noqa: E402
 
 
-# Ollama is local. Bypass system HTTP proxies, which can otherwise intercept
-# urllib requests to localhost/127.0.0.1 on some Windows setups.
-OLLAMA_CHAT_URL = "http://localhost:11434/api/chat"
-OLLAMA_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+OLLAMA_CHAT_URL = "http://127.0.0.1:11434/api/chat"
 MAX_PDF_BYTES = 15 * 1024 * 1024
 MAX_PDF_CHARS = 40000
 MAX_PDF_PAGES = 100
@@ -189,16 +186,11 @@ def call_plan(model: str, task: str, source_text: str, *, vulnerable: bool) -> d
         method="POST",
     )
     try:
-        with OLLAMA_OPENER.open(request, timeout=180) as response:
+        with urllib.request.urlopen(request, timeout=180) as response:
             result = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace").strip()
-        raise RuntimeError(
-            f"Ollama returned HTTP {exc.code} for {OLLAMA_CHAT_URL}: {detail or exc.reason}"
-        ) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RuntimeError(
-            f"Cannot reach Ollama at {OLLAMA_CHAT_URL}: {exc}. Confirm Ollama is running and that `ollama list` shows `{model}`."
+            f"Cannot reach local Ollama. Start Ollama and install the model with `ollama pull {model}`."
         ) from exc
     if "error" in result:
         raise RuntimeError(str(result["error"]))
