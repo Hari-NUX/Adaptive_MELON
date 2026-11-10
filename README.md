@@ -99,6 +99,21 @@ Record the source URL/revision, retrieval date, license, preprocessing version, 
 
 ## Current runnable workflows
 
+### Local chat interface for PDF and IPI testing
+
+For a chat-style interface, upload a PDF, ask for a summary or draft, and say
+`with MELON`, `without MELON`, or `compare with and without MELON` in the prompt.
+The default is a side-by-side comparison. Start the local UI with:
+
+~~~powershell
+py -3.15 -m pip install -r .\requirements-ui.txt
+py -3.15 -m streamlit run .\ui\app.py --server.address 127.0.0.1
+~~~
+
+The PDF stays in local app memory and is sent only to local Ollama. The app
+never sends email. Optional Gmail draft creation requires OAuth setup and a
+separate review action. See [docs/local_chat_ui.md](docs/local_chat_ui.md).
+
 ### Ask a local model about Gmail
 
 An optional Gmail CLI uses desktop OAuth to search and read your messages, then
